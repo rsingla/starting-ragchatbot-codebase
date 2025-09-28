@@ -3,8 +3,6 @@ const API_URL = '/api';
 
 // Global state
 let currentSessionId = null;
-let sessionHistory = []; // Store previous sessions
-let currentSessionIndex = -1; // Track current session in history
 
 // DOM elements
 let chatMessages, chatInput, sendButton, totalCourses, courseTitles;
@@ -40,14 +38,6 @@ function setupEventListeners() {
             sendMessage();
         });
     });
-
-    // New chat button
-    const newChatButton = document.getElementById('newChatBtn');
-    if (newChatButton) {
-        newChatButton.addEventListener('click', () => {
-            createNewSession();
-        });
-    }
 }
 
 
@@ -85,8 +75,10 @@ async function sendMessage() {
 
         const data = await response.json();
         
-        // Update session ID - always use the latest session ID from response
-        currentSessionId = data.session_id;
+        // Update session ID if new
+        if (!currentSessionId) {
+            currentSessionId = data.session_id;
+        }
 
         // Replace loading message with response
         loadingMessage.remove();
@@ -130,49 +122,25 @@ function addMessage(content, type, sources = null, isWelcome = false) {
     let html = `<div class="message-content">${displayContent}</div>`;
     
     if (sources && sources.length > 0) {
-        const sourcesList = sources.map((source, index) => {
+        const sourcesHtml = sources.map(source => {
             if (typeof source === 'string') {
                 // Handle legacy string format
-                return `<li class="source-item">
-                    <span class="source-number">${index + 1}.</span>
-                    <span class="source-text">${source}</span>
-                </li>`;
+                return source;
             } else if (source && source.source) {
                 // Handle new object format with link
                 if (source.link) {
-                    return `<li class="source-item">
-                        <span class="source-number">${index + 1}.</span>
-                        <a href="${source.link}" target="_blank" rel="noopener noreferrer" class="source-link">
-                            ${source.source}
-                            <svg class="external-link-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15,3 21,3 21,9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                        </a>
-                    </li>`;
+                    return `<a href="${source.link}" target="_blank" rel="noopener noreferrer">${source.source}</a>`;
                 } else {
-                    return `<li class="source-item">
-                        <span class="source-number">${index + 1}.</span>
-                        <span class="source-text">${source.source}</span>
-                    </li>`;
+                    return source.source;
                 }
             }
-            return `<li class="source-item">
-                <span class="source-number">${index + 1}.</span>
-                <span class="source-text">${source}</span>
-            </li>`;
-        }).join('');
+            return source;
+        }).join(', ');
         
         html += `
             <details class="sources-collapsible">
-                <summary class="sources-header">
-                    <span class="sources-title">Sources</span>
-                    <span class="sources-count">(${sources.length})</span>
-                </summary>
-                <div class="sources-content">
-                    <ul class="sources-list">${sourcesList}</ul>
-                </div>
+                <summary class="sources-header">Sources</summary>
+                <div class="sources-content">${sourcesHtml}</div>
             </details>
         `;
     }
@@ -191,97 +159,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Session History Management
-function saveCurrentSession() {
-    if (currentSessionIndex >= 0 && sessionHistory[currentSessionIndex]) {
-        // Save current session content
-        const sessionContent = chatMessages.innerHTML;
-        const sessionData = {
-            id: currentSessionId,
-            content: sessionContent,
-            timestamp: new Date().toISOString(),
-            title: generateSessionTitle()
-        };
-        sessionHistory[currentSessionIndex] = sessionData;
-    }
-}
-
-function generateSessionTitle() {
-    // Generate a title from the first user message
-    const userMessages = chatMessages.querySelectorAll('.message.user .message-content');
-    if (userMessages.length > 0) {
-        const firstMessage = userMessages[0].textContent.trim();
-        return firstMessage.length > 50 ? firstMessage.substring(0, 50) + '...' : firstMessage;
-    }
-    return 'New Chat';
-}
-
-function addSessionToHistory() {
-    const sessionContent = chatMessages.innerHTML;
-    const sessionData = {
-        id: currentSessionId,
-        content: sessionContent,
-        timestamp: new Date().toISOString(),
-        title: generateSessionTitle()
-    };
-    
-    sessionHistory.push(sessionData);
-    currentSessionIndex = sessionHistory.length - 1;
-    
-    // Update sidebar with session history
-    updateSessionHistorySidebar();
-}
-
-function updateSessionHistorySidebar() {
-    // This will be implemented to show session history in sidebar
-    console.log('Session history updated:', sessionHistory);
-}
+// Removed removeMessage function - no longer needed since we handle loading differently
 
 async function createNewSession() {
-    // Clear current session
     currentSessionId = null;
-    
-    // Clear chat messages with animation
-    chatMessages.style.opacity = '0.5';
-    chatMessages.style.transform = 'translateY(20px)';
-    
-    setTimeout(() => {
-        chatMessages.innerHTML = '';
-        chatMessages.style.opacity = '1';
-        chatMessages.style.transform = 'translateY(0)';
-    }, 200);
-    
-    // Reset any loading states
-    chatInput.disabled = false;
-    sendButton.disabled = false;
-    
-    // Add welcome message with slight delay for smooth transition
-    setTimeout(() => {
-        addMessage('Welcome to the Course Materials Assistant! I can help you with questions about courses, lessons and specific content. What would you like to know?', 'assistant', null, true);
-    }, 300);
-    
-    // Focus on input
-    setTimeout(() => {
-        chatInput.focus();
-    }, 400);
-    
-    // Add visual feedback to New Chat button
-    const newChatBtn = document.getElementById('newChatBtn');
-    if (newChatBtn) {
-        newChatBtn.style.transform = 'scale(0.95)';
-        newChatBtn.textContent = 'New Chat ✓';
-        newChatBtn.style.background = 'var(--success)';
-        
-        setTimeout(() => {
-            newChatBtn.style.transform = 'scale(1)';
-            setTimeout(() => {
-                newChatBtn.textContent = 'New Chat';
-                newChatBtn.style.background = 'var(--primary-gradient)';
-            }, 1000);
-        }, 150);
-    }
-    
-    console.log('New chat session started');
+    chatMessages.innerHTML = '';
+    addMessage('Welcome to the Course Materials Assistant! I can help you with questions about courses, lessons and specific content. What would you like to know?', 'assistant', null, true);
 }
 
 // Load course statistics
