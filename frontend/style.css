@@ -1198,6 +1198,32 @@ details[open] .suggested-header::before {
     .new-chat-btn::after {
         font-size: 0.9rem;
     }
+    
+    /* Mobile Session History */
+    .session-history {
+        max-height: 200px;
+        padding: 0.5rem;
+    }
+    
+    .session-item {
+        padding: 0.75rem;
+        gap: 0.5rem;
+        min-height: 44px; /* Touch-friendly */
+    }
+    
+    .session-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+    
+    .session-title {
+        font-size: 0.8rem;
+    }
+    
+    .session-timestamp {
+        font-size: 0.7rem;
+    }
 }
 
 @media (max-width: 1024px) {
@@ -1320,6 +1346,148 @@ details[open] .suggested-header::before {
 .new-chat-btn::after {
     content: '💬';
     font-size: 1rem;
+}
+
+/* Session History Styles */
+.history-collapsible {
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: var(--surface-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.history-header {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    user-select: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all var(--timing-normal) var(--ease-out);
+    background: var(--surface-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.history-header:hover {
+    color: var(--text-primary);
+    background: var(--surface-glass-hover);
+}
+
+.history-header::-webkit-details-marker {
+    display: none;
+}
+
+.history-header::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 0.5rem;
+    transition: transform 0.2s ease;
+    font-size: 0.75rem;
+}
+
+.history-collapsible[open] .history-header::before {
+    transform: rotate(90deg);
+}
+
+.session-history {
+    padding: 0.75rem;
+    background: var(--surface-glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.session-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--background);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all var(--timing-normal) var(--ease-out);
+    position: relative;
+    overflow: hidden;
+}
+
+.session-item:last-child {
+    margin-bottom: 0;
+}
+
+.session-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%);
+    z-index: -1;
+}
+
+.session-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-focus);
+}
+
+.session-item.active {
+    border-color: var(--primary);
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.session-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    background: var(--primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.session-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.session-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-timestamp {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+.no-sessions {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-style: italic;
+    padding: 1rem;
+    font-size: 0.875rem;
 }
 
 /* Enhanced Source Links - Now handled by .source-link class above */

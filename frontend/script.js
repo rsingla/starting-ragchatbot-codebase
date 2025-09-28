@@ -91,6 +91,11 @@ async function sendMessage() {
         // Replace loading message with response
         loadingMessage.remove();
         addMessage(data.answer, 'assistant', data.sources);
+        
+        // Save session to history after getting response
+        if (currentSessionId) {
+            addSessionToHistory();
+        }
 
     } catch (error) {
         // Replace loading message with error
@@ -233,11 +238,145 @@ function addSessionToHistory() {
 }
 
 function updateSessionHistorySidebar() {
-    // This will be implemented to show session history in sidebar
-    console.log('Session history updated:', sessionHistory);
+    const sessionHistoryContainer = document.getElementById('sessionHistory');
+    if (!sessionHistoryContainer) return;
+    
+    if (sessionHistory.length === 0) {
+        sessionHistoryContainer.innerHTML = '<div class="no-sessions">No previous chats</div>';
+        return;
+    }
+    
+    const sessionsHtml = sessionHistory.map((session, index) => {
+        const isActive = index === currentSessionIndex;
+        const timestamp = new Date(session.timestamp).toLocaleString();
+        
+        return `
+            <div class="session-item ${isActive ? 'active' : ''}" data-session-index="${index}">
+                <div class="session-icon">${index + 1}</div>
+                <div class="session-content">
+                    <div class="session-title">${session.title}</div>
+                    <div class="session-timestamp">${timestamp}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    sessionHistoryContainer.innerHTML = sessionsHtml;
+    
+    // Add click handlers for session items
+    sessionHistoryContainer.querySelectorAll('.session-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            // Don't trigger if clicking delete button
+            if (e.target.classList.contains('delete-session')) return;
+            
+            const sessionIndex = parseInt(item.dataset.sessionIndex);
+            loadSession(sessionIndex);
+        });
+        
+        // Add delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-session';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.style.cssText = `
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: var(--error);
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        `;
+        
+        item.style.position = 'relative';
+        item.appendChild(deleteBtn);
+        
+        // Show delete button on hover
+        item.addEventListener('mouseenter', () => {
+            deleteBtn.style.opacity = '1';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            deleteBtn.style.opacity = '0';
+        });
+        
+        // Handle delete
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const sessionIndex = parseInt(item.dataset.sessionIndex);
+            deleteSession(sessionIndex);
+        });
+    });
+}
+
+function loadSession(sessionIndex) {
+    if (sessionIndex < 0 || sessionIndex >= sessionHistory.length) return;
+    
+    const session = sessionHistory[sessionIndex];
+    
+    // Save current session if it has content
+    if (currentSessionId && chatMessages.children.length > 0) {
+        saveCurrentSession();
+    }
+    
+    // Load the selected session
+    currentSessionIndex = sessionIndex;
+    currentSessionId = session.id;
+    
+    // Clear and load session content
+    chatMessages.style.opacity = '0.5';
+    chatMessages.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        chatMessages.innerHTML = session.content;
+        chatMessages.style.opacity = '1';
+        chatMessages.style.transform = 'translateY(0)';
+        
+        // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Update sidebar to show active session
+        updateSessionHistorySidebar();
+    }, 200);
+}
+
+function deleteSession(sessionIndex) {
+    if (sessionIndex < 0 || sessionIndex >= sessionHistory.length) return;
+    
+    // If deleting the current session, clear the chat
+    if (sessionIndex === currentSessionIndex) {
+        chatMessages.innerHTML = '';
+        currentSessionId = null;
+        currentSessionIndex = -1;
+    } else if (sessionIndex < currentSessionIndex) {
+        // Adjust current session index if we're deleting a session before the current one
+        currentSessionIndex--;
+    }
+    
+    // Remove the session from history
+    sessionHistory.splice(sessionIndex, 1);
+    
+    // Update the sidebar
+    updateSessionHistorySidebar();
+    
+    console.log('Session deleted:', sessionIndex);
 }
 
 async function createNewSession() {
+    // Save current session if it has content
+    const hasContent = chatMessages.children.length > 0;
+    if (hasContent && currentSessionId) {
+        saveCurrentSession();
+    }
+    
     // Clear current session
     currentSessionId = null;
     
